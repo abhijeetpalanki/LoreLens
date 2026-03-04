@@ -105,7 +105,9 @@ export default async function Home() {
                     </h3>
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-xs text-indigo-400 font-medium">
-                        S{item.currentSeason} • E{item.currentEpisode}
+                        {franchise.type === "Movie"
+                          ? "Movie"
+                          : `S${item.currentSeason} • E${item.currentEpisode}`}
                       </span>
                       <PlayCircle
                         size={20}

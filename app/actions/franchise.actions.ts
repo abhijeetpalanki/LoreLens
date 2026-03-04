@@ -1,11 +1,12 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
+
+import { FranchiseInput, PopulatedLibraryItem, TMDBResult } from "@/types";
 import { connectToDatabase } from "@/app/lib/db";
 import { Franchise } from "@/app/lib/models/Franchise";
 import { UserProgress } from "@/app/lib/models/UserProgress";
-import { revalidatePath } from "next/cache";
-import { FranchiseInput, PopulatedLibraryItem, TMDBResult } from "@/types";
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
@@ -173,4 +174,27 @@ export async function addFranchiseToLibrary(franchiseData: FranchiseInput) {
 
   revalidatePath("/");
   return { success: true, franchiseId: franchise._id.toString() };
+}
+
+export async function updateProgress(
+  progressId: string,
+  updates: { currentSeason?: number; currentEpisode?: number; status?: string },
+) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  await connectToDatabase();
+
+  const updated = await UserProgress.findOneAndUpdate(
+    { _id: progressId, userId },
+    { $set: updates },
+    { new: true },
+  );
+
+  if (!updated) throw new Error("Progress not found");
+
+  revalidatePath(`/franchise/${updated.franchiseId}`);
+  revalidatePath("/");
+
+  return { success: true };
 }

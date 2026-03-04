@@ -96,7 +96,7 @@ export function SearchModal() {
                       alt={item.title}
                       width={64}
                       height={96}
-                      className="object-cover rounded-md"
+                      className="object-cover rounded-md shrink-0"
                     />
                   ) : (
                     <div className="w-16 h-24 bg-neutral-800 rounded-md flex items-center justify-center text-xs text-neutral-500 text-center p-1">

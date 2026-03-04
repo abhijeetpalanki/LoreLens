@@ -34,3 +34,9 @@ export interface PopulatedLibraryItem {
   currentEpisode: number;
   status: string;
 }
+
+export interface ProgressTrackerProps {
+  progressId: string;
+  initialSeason: number;
+  initialEpisode: number;
+}
