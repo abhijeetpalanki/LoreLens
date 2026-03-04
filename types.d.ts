@@ -1,0 +1,36 @@
+export interface TMDBResult {
+  id: number;
+  title?: string;
+  name?: string;
+  media_type: "tv" | "movie" | "person";
+  overview: string;
+  poster_path: string | null;
+  release_date?: string;
+  first_air_date?: string;
+  popularity?: number;
+}
+
+export interface FranchiseInput {
+  tmdbId: number;
+  title: string;
+  type: "TV" | "Movie" | "Anime";
+  description: string;
+  coverImage: string | null;
+  releaseDate?: string;
+}
+
+export interface PopulatedLibraryItem {
+  _id: string;
+  userId: string;
+  franchiseId: {
+    _id: string;
+    tmdbId: number;
+    title: string;
+    type: string;
+    description: string;
+    coverImage: string | null;
+  };
+  currentSeason: number;
+  currentEpisode: number;
+  status: string;
+}
