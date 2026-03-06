@@ -45,7 +45,7 @@ export function ProgressTracker({
           <button
             onClick={() => handleUpdate("season", -1)}
             disabled={isPending || season <= 1}
-            className="p-1 text-neutral-400 hover:text-white disabled:opacity-50"
+            className="p-1 text-neutral-400 hover:text-white disabled:opacity-50 cursor-pointer"
           >
             <Minus size={16} />
           </button>
@@ -53,7 +53,7 @@ export function ProgressTracker({
           <button
             onClick={() => handleUpdate("season", 1)}
             disabled={isPending}
-            className="p-1 text-neutral-400 hover:text-white disabled:opacity-50"
+            className="p-1 text-neutral-400 hover:text-white disabled:opacity-50 cursor-pointer"
           >
             <Plus size={16} />
           </button>
@@ -70,7 +70,7 @@ export function ProgressTracker({
           <button
             onClick={() => handleUpdate("episode", -1)}
             disabled={isPending || episode <= 1}
-            className="p-1 text-neutral-400 hover:text-white disabled:opacity-50"
+            className="p-1 text-neutral-400 hover:text-white disabled:opacity-50 cursor-pointer"
           >
             <Minus size={16} />
           </button>
@@ -78,7 +78,7 @@ export function ProgressTracker({
           <button
             onClick={() => handleUpdate("episode", 1)}
             disabled={isPending}
-            className="p-1 text-neutral-400 hover:text-white disabled:opacity-50"
+            className="p-1 text-neutral-400 hover:text-white disabled:opacity-50 cursor-pointer"
           >
             <Plus size={16} />
           </button>

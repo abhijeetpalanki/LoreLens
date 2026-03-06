@@ -5,6 +5,7 @@ export interface IUserProgress extends Document {
   franchiseId: mongoose.Types.ObjectId;
   currentSeason: number;
   currentEpisode: number;
+  isSpoilerMode: boolean;
   status: "Watching" | "Completed" | "Plan to Watch";
 }
 
@@ -18,6 +19,7 @@ const UserProgressSchema = new Schema<IUserProgress>(
     },
     currentSeason: { type: Number, default: 1 },
     currentEpisode: { type: Number, default: 1 },
+    isSpoilerMode: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ["Watching", "Completed", "Plan to Watch"],

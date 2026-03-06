@@ -40,3 +40,18 @@ export interface ProgressTrackerProps {
   initialSeason: number;
   initialEpisode: number;
 }
+
+export interface ChatInterfaceProps {
+  initialMessages: Message[];
+  franchiseId: string;
+  franchiseTitle: string;
+  franchiseType: string;
+  currentSeason: number;
+  currentEpisode: number;
+}
+
+export interface Message {
+  role: "user" | "model" | "system";
+  content: string;
+  isSystem?: boolean;
+}
