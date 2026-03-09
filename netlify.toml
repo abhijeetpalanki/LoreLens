@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[functions]
+  node_wrapper = "bundler"
+  included_files = ["node_modules/@clerk/nextjs/**"]
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
