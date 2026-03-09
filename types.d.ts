@@ -33,6 +33,7 @@ export interface PopulatedLibraryItem {
   currentSeason: number;
   currentEpisode: number;
   status: string;
+  isRewatching: boolean;
 }
 
 export interface ProgressTrackerProps {

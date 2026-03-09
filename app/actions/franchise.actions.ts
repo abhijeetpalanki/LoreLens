@@ -12,6 +12,7 @@ import {
 import { connectToDatabase } from "@/app/lib/db";
 import { Franchise } from "@/app/lib/models/Franchise";
 import { UserProgress } from "@/app/lib/models/UserProgress";
+import { ChatMessage } from "../lib/models/ChatMessage";
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
@@ -126,21 +127,31 @@ export async function getUserLibrary(): Promise<PopulatedLibraryItem[]> {
     .sort({ updatedAt: -1 })
     .lean();
 
-  return library.map(
-    (item): PopulatedLibraryItem => ({
-      _id: item._id.toString(),
-      userId: item.userId,
-      franchiseId: {
-        _id: item.franchiseId._id.toString(),
-        tmdbId: item.franchiseId.tmdbId,
-        title: item.franchiseId.title,
-        type: item.franchiseId.type,
-        description: item.franchiseId.description,
-        coverImage: item.franchiseId.coverImage,
-      },
-      currentSeason: item.currentSeason,
-      currentEpisode: item.currentEpisode,
-      status: item.status,
+  return Promise.all(
+    library.map(async (item): Promise<PopulatedLibraryItem> => {
+      const hasHistory = await ChatMessage.exists({
+        userId,
+        franchiseId: item.franchiseId._id,
+      });
+
+      const isAtStart = item.currentSeason === 1 && item.currentEpisode === 1;
+
+      return {
+        _id: item._id.toString(),
+        userId: item.userId,
+        franchiseId: {
+          _id: item.franchiseId._id.toString(),
+          tmdbId: item.franchiseId.tmdbId,
+          title: item.franchiseId.title,
+          type: item.franchiseId.type,
+          description: item.franchiseId.description,
+          coverImage: item.franchiseId.coverImage,
+        },
+        currentSeason: item.currentSeason,
+        currentEpisode: item.currentEpisode,
+        status: item.status,
+        isRewatching: !!hasHistory && isAtStart,
+      };
     }),
   );
 }
@@ -229,5 +240,17 @@ export async function updateProgress(
   await UserProgress.findByIdAndUpdate(progressId, { $set: updates });
   revalidatePath(`/franchise/${progress.franchiseId._id}`);
 
+  return { success: true };
+}
+
+export async function markAsCompleted(franchiseId: string) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  await connectToDatabase();
+
+  await UserProgress.findOneAndDelete({ userId, franchiseId });
+
+  revalidatePath("/");
   return { success: true };
 }

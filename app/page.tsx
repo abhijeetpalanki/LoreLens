@@ -1,11 +1,12 @@
 import Link from "next/link";
 import Image from "next/image";
-import { PlayCircle, Sparkles } from "lucide-react";
+import { History, PlayCircle, Sparkles } from "lucide-react";
 import { auth } from "@clerk/nextjs/server";
 
 import { PopulatedLibraryItem } from "@/types";
 import { getTrending, getUserLibrary } from "@/app/actions/franchise.actions";
 import { SearchModal } from "@/app/components/search-modal";
+import { CompleteButton } from "./components/complete-button";
 
 export default async function Home() {
   const { userId } = await auth();
@@ -81,41 +82,53 @@ export default async function Home() {
             {library.map((item: PopulatedLibraryItem) => {
               const franchise = item.franchiseId;
               return (
-                <Link
-                  href={`/franchise/${franchise._id}`}
-                  key={item._id.toString()}
-                  className="group relative aspect-2/3 rounded-xl border border-neutral-800 bg-neutral-900 overflow-hidden hover:border-indigo-500 transition-colors"
-                >
-                  {franchise.coverImage ? (
-                    <Image
-                      src={franchise.coverImage}
-                      alt={franchise.title}
-                      layout="fill"
-                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center p-4 text-center text-neutral-500">
-                      {franchise.title}
+                <div key={item._id.toString()} className="group relative">
+                  <CompleteButton franchiseId={franchise._id} />
+
+                  {item.isRewatching && (
+                    <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 bg-indigo-500/90 backdrop-blur-md rounded-lg border border-white/20 shadow-lg animate-in fade-in slide-in-from-left-2">
+                      <History size={12} className="text-white" />
+                      <span className="text-[10px] font-black uppercase tracking-tighter text-white">
+                        Re-watching
+                      </span>
                     </div>
                   )}
 
-                  <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-4">
-                    <h3 className="font-semibold text-white line-clamp-1">
-                      {franchise.title}
-                    </h3>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-indigo-400 font-medium">
-                        {franchise.type === "Movie"
-                          ? "Movie"
-                          : `S${item.currentSeason} • E${item.currentEpisode}`}
-                      </span>
-                      <PlayCircle
-                        size={20}
-                        className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                  <Link
+                    href={`/franchise/${franchise._id}`}
+                    className="block relative aspect-2/3 rounded-xl border border-neutral-800 bg-neutral-900 overflow-hidden hover:border-indigo-500 transition-all shadow-lg hover:shadow-indigo-500/10"
+                  >
+                    {franchise.coverImage ? (
+                      <Image
+                        src={franchise.coverImage}
+                        alt={franchise.title}
+                        fill
+                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                       />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center p-4 text-center text-neutral-500">
+                        {franchise.title}
+                      </div>
+                    )}
+
+                    <div className="absolute inset-0 bg-linear-to-t from-black/95 via-black/40 to-transparent flex flex-col justify-end p-4">
+                      <h3 className="font-semibold text-white line-clamp-1 group-hover:text-indigo-300 transition-colors">
+                        {franchise.title}
+                      </h3>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-[10px] uppercase tracking-wider text-indigo-400 font-bold">
+                          {franchise.type === "Movie"
+                            ? "Movie"
+                            : `S${item.currentSeason} • E${item.currentEpisode}`}
+                        </span>
+                        <PlayCircle
+                          size={18}
+                          className="text-white opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all"
+                        />
+                      </div>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                </div>
               );
             })}
           </div>
