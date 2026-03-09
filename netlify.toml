@@ -3,8 +3,8 @@
   publish = ".next"
 
 [functions]
-  node_wrapper = "bundler"
-  included_files = ["node_modules/@clerk/nextjs/**"]
+  node_bundler = "esbuild"
+  external_node_modules = ["@clerk/nextjs"]
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
