@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { auth } from "@clerk/nextjs/server";
 
@@ -30,9 +30,16 @@ export default async function FranchisePage({
     ChatMessage.find({ userId, franchiseId: id }).sort({ createdAt: 1 }).lean(),
   ]);
 
+  if (!progress) {
+    notFound();
+  }
+
   const franchise = progress.franchiseId;
   const isMovie = franchise.type === "Movie";
   const serializedHistory = JSON.parse(JSON.stringify(chatHistory));
+  const seasonMap = franchise.seasonMap
+    ? JSON.parse(JSON.stringify(franchise.seasonMap))
+    : {};
 
   return (
     <div className="flex flex-col bg-neutral-950">
@@ -80,6 +87,7 @@ export default async function FranchisePage({
                 progressId={progress._id.toString()}
                 initialSeason={progress.currentSeason}
                 initialEpisode={progress.currentEpisode}
+                seasonMap={seasonMap}
               />
             ) : (
               <div className="bg-neutral-900 border border-neutral-800 p-4 rounded-xl flex items-center justify-center text-sm font-medium text-neutral-400">

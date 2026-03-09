@@ -6,6 +6,7 @@ export interface IFranchise extends Document {
   type: "Movie" | "TV" | "Anime";
   description: string;
   coverImage: string;
+  seasonMap: Record<string, number>;
 }
 
 const FranchiseSchema = new Schema<IFranchise>({
@@ -14,6 +15,7 @@ const FranchiseSchema = new Schema<IFranchise>({
   type: { type: String, enum: ["Movie", "TV", "Anime"], required: true },
   description: { type: String },
   coverImage: { type: String },
+  seasonMap: { type: Map, of: Number },
 });
 
 export const Franchise =

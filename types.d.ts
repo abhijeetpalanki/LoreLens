@@ -39,6 +39,7 @@ export interface ProgressTrackerProps {
   progressId: string;
   initialSeason: number;
   initialEpisode: number;
+  seasonMap: Record<string, number>;
 }
 
 export interface ChatInterfaceProps {
@@ -54,4 +55,15 @@ export interface Message {
   role: "user" | "model" | "system";
   content: string;
   isSystem?: boolean;
+}
+
+export interface TMDBSeason {
+  id: number;
+  name: string;
+  overview: string;
+  poster_path: string | null;
+  season_number: number;
+  episode_count: number;
+  air_date: string;
+  vote_average: number;
 }

@@ -10,10 +10,20 @@ export function ProgressTracker({
   progressId,
   initialSeason,
   initialEpisode,
+  seasonMap = {},
 }: ProgressTrackerProps) {
   const [season, setSeason] = useState(initialSeason);
   const [episode, setEpisode] = useState(initialEpisode);
   const [isPending, startTransition] = useTransition();
+
+  const seasonKeys = Object.keys(seasonMap).sort(
+    (a, b) => Number(a) - Number(b),
+  );
+  const totalSeasons = seasonKeys.length;
+  const maxEpisodesInCurrentSeason = seasonMap[season.toString()] || 0;
+
+  const canIncrementSeason = season < totalSeasons;
+  const canIncrementEpisode = episode < maxEpisodesInCurrentSeason;
 
   const handleUpdate = (type: "season" | "episode", amount: number) => {
     let newSeason = season;
@@ -21,39 +31,49 @@ export function ProgressTracker({
 
     if (type === "season") {
       newSeason = Math.max(1, season + amount);
+      newEpisode = 1;
       setSeason(newSeason);
+      setEpisode(newEpisode);
     } else {
       newEpisode = Math.max(1, episode + amount);
       setEpisode(newEpisode);
     }
 
     startTransition(async () => {
-      await updateProgress(progressId, {
-        currentSeason: newSeason,
-        currentEpisode: newEpisode,
-      });
+      try {
+        await updateProgress(progressId, {
+          currentSeason: newSeason,
+          currentEpisode: newEpisode,
+        });
+      } catch (e) {
+        setSeason(initialSeason);
+        setEpisode(initialEpisode);
+      }
     });
   };
 
   return (
     <div className="flex items-center gap-6 bg-neutral-900 border border-neutral-800 p-4 rounded-xl">
+      {/* Season Control */}
       <div className="flex flex-col items-center">
-        <span className="text-xs text-neutral-400 uppercase tracking-wider font-semibold mb-2">
+        <span className="text-[10px] text-neutral-500 uppercase tracking-widest font-black mb-2">
           Season
         </span>
         <div className="flex items-center gap-3">
           <button
             onClick={() => handleUpdate("season", -1)}
             disabled={isPending || season <= 1}
-            className="p-1 text-neutral-400 hover:text-white disabled:opacity-50 cursor-pointer"
+            className="p-1 text-neutral-400 hover:text-white disabled:opacity-10 transition-colors"
           >
             <Minus size={16} />
           </button>
-          <span className="text-xl font-bold w-6 text-center">{season}</span>
+          <span className="text-xl font-black w-8 text-center tabular-nums text-white">
+            {season}
+          </span>
           <button
             onClick={() => handleUpdate("season", 1)}
-            disabled={isPending}
-            className="p-1 text-neutral-400 hover:text-white disabled:opacity-50 cursor-pointer"
+            disabled={isPending || !canIncrementSeason}
+            className="p-1 text-neutral-400 hover:text-indigo-400 disabled:opacity-10 transition-colors"
           >
             <Plus size={16} />
           </button>
@@ -62,23 +82,28 @@ export function ProgressTracker({
 
       <div className="w-px h-10 bg-neutral-800" />
 
+      {/* Episode Control */}
       <div className="flex flex-col items-center">
-        <span className="text-xs text-neutral-400 uppercase tracking-wider font-semibold mb-2">
+        <span className="text-[10px] text-neutral-500 uppercase tracking-widest font-black mb-2">
           Episode
         </span>
         <div className="flex items-center gap-3">
           <button
             onClick={() => handleUpdate("episode", -1)}
             disabled={isPending || episode <= 1}
-            className="p-1 text-neutral-400 hover:text-white disabled:opacity-50 cursor-pointer"
+            className="p-1 text-neutral-400 hover:text-white disabled:opacity-10 transition-colors"
           >
             <Minus size={16} />
           </button>
-          <span className="text-xl font-bold w-6 text-center">{episode}</span>
+          <span className="text-xl font-black w-8 text-center tabular-nums text-white">
+            {episode}
+          </span>
           <button
             onClick={() => handleUpdate("episode", 1)}
-            disabled={isPending}
-            className="p-1 text-neutral-400 hover:text-white disabled:opacity-50 cursor-pointer"
+            disabled={
+              isPending || (!canIncrementEpisode && !canIncrementSeason)
+            }
+            className="p-1 text-neutral-400 hover:text-indigo-400 disabled:opacity-10 transition-colors"
           >
             <Plus size={16} />
           </button>
@@ -86,7 +111,7 @@ export function ProgressTracker({
       </div>
 
       {isPending && (
-        <Loader2 size={16} className="animate-spin text-indigo-500 ml-4" />
+        <Loader2 size={16} className="animate-spin text-indigo-500 ml-2" />
       )}
     </div>
   );

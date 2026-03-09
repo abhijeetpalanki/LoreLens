@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
 
-import { FranchiseInput, PopulatedLibraryItem, TMDBResult } from "@/types";
+import {
+  FranchiseInput,
+  PopulatedLibraryItem,
+  TMDBResult,
+  TMDBSeason,
+} from "@/types";
 import { connectToDatabase } from "@/app/lib/db";
 import { Franchise } from "@/app/lib/models/Franchise";
 import { UserProgress } from "@/app/lib/models/UserProgress";
@@ -146,17 +151,29 @@ export async function addFranchiseToLibrary(franchiseData: FranchiseInput) {
 
   await connectToDatabase();
 
-  let franchise = await Franchise.findOne({ tmdbId: franchiseData.tmdbId });
+  const seasonMap: Record<number, number> = {};
+  if (franchiseData.type === "TV") {
+    const res = await fetch(
+      `${TMDB_BASE_URL}/tv/${franchiseData.tmdbId}?language=en-US`,
+      { headers: { Authorization: `Bearer ${process.env.TMDB_ACCESS_TOKEN}` } },
+    );
+    const details = await res.json();
 
-  if (!franchise) {
-    franchise = await Franchise.create({
-      tmdbId: franchiseData.tmdbId,
-      title: franchiseData.title,
-      type: franchiseData.type,
-      description: franchiseData.description,
-      coverImage: franchiseData.coverImage,
+    details.seasons.forEach((s: TMDBSeason) => {
+      if (s.season_number > 0) {
+        seasonMap[s.season_number] = s.episode_count;
+      }
     });
   }
+
+  const franchise = await Franchise.findOneAndUpdate(
+    { tmdbId: franchiseData.tmdbId },
+    {
+      ...franchiseData,
+      seasonMap,
+    },
+    { upsert: true, new: true },
+  );
 
   await UserProgress.findOneAndUpdate(
     { userId, franchiseId: franchise._id },
@@ -185,16 +202,32 @@ export async function updateProgress(
 
   await connectToDatabase();
 
-  const updated = await UserProgress.findOneAndUpdate(
-    { _id: progressId, userId },
-    { $set: updates },
-    { new: true },
-  );
+  const progress =
+    await UserProgress.findById(progressId).populate("franchiseId");
+  if (!progress) throw new Error("Progress not found");
 
-  if (!updated) throw new Error("Progress not found");
+  const seasonMap = progress.franchiseId.seasonMap;
+  const newSeason = updates.currentSeason ?? progress.currentSeason;
 
-  revalidatePath(`/franchise/${updated.franchiseId}`);
-  revalidatePath("/");
+  if (!seasonMap || !seasonMap.has(newSeason.toString())) {
+    throw new Error(`Season ${newSeason} is not yet available.`);
+  }
+
+  const newEpisode = updates.currentEpisode ?? progress.currentEpisode;
+
+  const maxEpisodes = seasonMap.get(newSeason.toString());
+
+  if (newEpisode > maxEpisodes) {
+    if (seasonMap.has((newSeason + 1).toString())) {
+      updates.currentSeason = newSeason + 1;
+      updates.currentEpisode = 1;
+    } else {
+      throw new Error("You've reached the end of the series!");
+    }
+  }
+
+  await UserProgress.findByIdAndUpdate(progressId, { $set: updates });
+  revalidatePath(`/franchise/${progress.franchiseId._id}`);
 
   return { success: true };
 }
