@@ -48,7 +48,8 @@ export default async function Home() {
                 <Image
                   src={item.coverImage!}
                   alt={item.title}
-                  layout="fill"
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity"
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black via-transparent p-4 flex flex-col justify-end">
@@ -103,6 +104,7 @@ export default async function Home() {
                         src={franchise.coverImage}
                         alt={franchise.title}
                         fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                       />
                     ) : (

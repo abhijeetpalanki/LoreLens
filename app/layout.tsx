@@ -24,7 +24,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="bg-neutral-950 text-neutral-50 antialiased">
+      <body
+        className="bg-neutral-950 text-neutral-50 antialiased"
+        suppressHydrationWarning
+      >
         <ThemeProvider>
           <ClerkProvider appearance={{ baseTheme: dark }}>
             <header className="sticky top-0 z-50 w-full border-b border-neutral-800 bg-neutral-950/80 backdrop-blur-md">
