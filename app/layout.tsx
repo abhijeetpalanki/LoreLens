@@ -26,7 +26,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="bg-neutral-950 text-neutral-50 antialiased">
         <ThemeProvider>
-          <ClerkProvider appearance={{ baseTheme: dark }}>
+          <ClerkProvider
+            isSatellite={process.env.NEXT_PUBLIC_IS_SATELLITE === "true"}
+            appearance={{ baseTheme: dark }}
+          >
             <header className="sticky top-0 z-50 w-full border-b border-neutral-800 bg-neutral-950/80 backdrop-blur-md">
               <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                 <Logo />
