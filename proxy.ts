@@ -1,9 +1,7 @@
+// proxy.ts
 import { NextFetchEvent, NextRequest } from "next/server";
 
-export default async function middleware(
-  req: NextRequest,
-  event: NextFetchEvent,
-) {
+export default async function proxy(req: NextRequest, event: NextFetchEvent) {
   const { clerkMiddleware, createRouteMatcher } =
     await import("@clerk/nextjs/server");
 
