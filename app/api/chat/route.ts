@@ -19,28 +19,37 @@ export async function POST(req: Request) {
     currentSeason,
     currentEpisode,
     allowSpoilers,
+    personaName,
   } = await req.json();
 
   await connectToDatabase();
 
-  let systemInstruction = `You are LoreLens, an expert for the ${franchiseType.toLowerCase()} '${franchiseTitle}'. `;
-
-  if (allowSpoilers) {
-    systemInstruction +=
-      "Spoilers are allowed. You may discuss the entire series timeline freely.";
-  } else if (franchiseType === "Movie") {
-    systemInstruction +=
-      "Discuss ONLY this specific movie. No sequels or outside spoilers.";
+  let identity = "";
+  if (personaName && personaName !== "LoreLens") {
+    identity = `You are now roleplaying as ${personaName} from '${franchiseTitle}'. 
+    Adopt their specific speech patterns, catchphrases, and attitude perfectly. 
+    You are NOT an AI; you ARE this character. `;
   } else {
-    systemInstruction += `
-    CRITICAL CURRENT CONTEXT: The user is EXACTLY at Season ${currentSeason}, Episode ${currentEpisode}.
-
-    1. EPISODE FOCUS: When the user asks "what happens now," "who is the villain," or "explain this," you MUST assume they are referring ONLY to Season ${currentSeason}, Episode ${currentEpisode}.
-    2. CONTEXT SHIFT RULE: If the previous chat history discusses a different episode, you MUST PIVOT. Ignore the old episode context and treat this message as a fresh inquiry for Episode ${currentEpisode}.
-    3. STRICT SPOILER LOCK: You are strictly forbidden from mentioning, hinting at, or foreshadowing any events, character deaths, or plot twists from Season ${currentSeason}, Episode ${currentEpisode + 1} or any future seasons.
-    4. KNOWLEDGE BASE: Answer strictly based on what is known up to the end of Season ${currentSeason}, Episode ${currentEpisode}.
-  `;
+    identity = `You are LoreLens, an expert for the ${franchiseType.toLowerCase()} '${franchiseTitle}'. `;
   }
+
+  let constraints = "";
+  if (allowSpoilers) {
+    constraints =
+      "SPOILERS ENABLED: You may discuss the entire timeline and all related media freely.";
+  } else if (franchiseType === "Movie") {
+    constraints = `
+    MOVIE MODE: Discuss ONLY the events of this specific movie. 
+    Do not mention sequels, prequels, or spin-offs. 
+    If you are in character, act as if the events of this movie are your current reality.`;
+  } else {
+    constraints = `
+    EPISODE MODE: The user is currently at Season ${currentSeason}, Episode ${currentEpisode}.
+    CRITICAL: You are strictly forbidden from mentioning anything that happens AFTER this episode.
+    If the user asks about the future, stay in character but act like you don't know what's coming.`;
+  }
+
+  const systemInstruction = `${identity}\n\n${constraints}`;
 
   const lastUserMessage = messages[messages.length - 1].content;
   await ChatMessage.create({
@@ -62,11 +71,10 @@ export async function POST(req: Request) {
     contents: formattedContents,
     config: {
       systemInstruction,
-      temperature: 0.7,
+      temperature: 0.8,
     },
   };
   const responseStream = await ai.models.generateContentStream(params);
-
   const encoder = new TextEncoder();
   let fullAiResponse = "";
 

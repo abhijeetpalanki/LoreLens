@@ -50,6 +50,8 @@ export interface ChatInterfaceProps {
   franchiseType: string;
   currentSeason: number;
   currentEpisode: number;
+  activePersona: string;
+  personas: Persona[];
 }
 
 export interface Message {
@@ -67,4 +69,32 @@ export interface TMDBSeason {
   episode_count: number;
   air_date: string;
   vote_average: number;
+}
+
+export interface Persona {
+  name: string;
+  emoji: string;
+}
+
+export interface PersonaDockProps {
+  activePersona: string;
+  onSelect: (name: string) => void;
+  personas: Persona[];
+}
+
+export interface FranchiseClientProps {
+  franchise: {
+    _id: string;
+    title: string;
+    description: string;
+    coverImage: string;
+    type: "Movie" | "TV Show";
+    seasonMap?: Record<string, number>;
+  };
+  progress: {
+    _id: string;
+    currentSeason: number;
+    currentEpisode: number;
+  };
+  chatHistory: Message[];
 }
