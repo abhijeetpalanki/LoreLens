@@ -16,14 +16,11 @@ export function ProgressTracker({
   const [episode, setEpisode] = useState(initialEpisode);
   const [isPending, startTransition] = useTransition();
 
-  const seasonKeys = Object.keys(seasonMap).sort(
-    (a, b) => Number(a) - Number(b),
-  );
-  const totalSeasons = seasonKeys.length;
-  const maxEpisodesInCurrentSeason = seasonMap[season.toString()] || 0;
-
-  const canIncrementSeason = season < totalSeasons;
-  const canIncrementEpisode = episode < maxEpisodesInCurrentSeason;
+  const knownSeasons = Object.keys(seasonMap).map(Number);
+  const maxKnownSeason =
+    knownSeasons.length > 0 ? Math.max(...knownSeasons) : 1;
+  const maxEpisodesInCurrentSeason = seasonMap[season.toString()] || 99;
+  const isAboveKnownSeasons = season >= maxKnownSeason;
 
   const handleUpdate = (type: "season" | "episode", amount: number) => {
     let newSeason = season;
@@ -67,12 +64,18 @@ export function ProgressTracker({
           >
             <Minus size={16} />
           </button>
-          <span className="text-xl font-black w-8 text-center tabular-nums text-white">
+          <span
+            className={`text-xl font-black w-8 text-center tabular-nums transition-colors ${
+              isAboveKnownSeasons && season > 1
+                ? "text-amber-400"
+                : "text-white"
+            }`}
+          >
             {season}
           </span>
           <button
             onClick={() => handleUpdate("season", 1)}
-            disabled={isPending || !canIncrementSeason}
+            disabled={isPending}
             className="p-1 text-neutral-400 hover:text-indigo-400 disabled:opacity-10 transition-colors"
           >
             <Plus size={16} />
@@ -100,9 +103,7 @@ export function ProgressTracker({
           </span>
           <button
             onClick={() => handleUpdate("episode", 1)}
-            disabled={
-              isPending || (!canIncrementEpisode && !canIncrementSeason)
-            }
+            disabled={isPending || episode >= maxEpisodesInCurrentSeason}
             className="p-1 text-neutral-400 hover:text-indigo-400 disabled:opacity-10 transition-colors"
           >
             <Plus size={16} />

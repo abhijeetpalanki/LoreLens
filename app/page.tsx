@@ -82,15 +82,27 @@ export default async function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {library.map((item: PopulatedLibraryItem) => {
               const franchise = item.franchiseId;
+
+              const isRewatching = item.status === "Re-watching";
+              const isNew = item.status === "New";
               return (
                 <div key={item._id.toString()} className="group relative">
                   <CompleteButton franchiseId={franchise._id} />
 
-                  {item.isRewatching && (
-                    <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 bg-indigo-500/90 backdrop-blur-md rounded-lg border border-white/20 shadow-lg animate-in fade-in slide-in-from-left-2">
+                  {isRewatching && (
+                    <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/90 backdrop-blur-md rounded-lg border border-white/20 shadow-lg animate-in fade-in slide-in-from-left-2">
                       <History size={12} className="text-white" />
                       <span className="text-[10px] font-black uppercase tracking-tighter text-white">
                         Re-watching
+                      </span>
+                    </div>
+                  )}
+
+                  {isNew && !isRewatching && (
+                    <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/90 backdrop-blur-md rounded-lg border border-white/20 shadow-lg animate-in fade-in slide-in-from-left-2">
+                      <Sparkles size={12} className="text-white" />
+                      <span className="text-[10px] font-black uppercase tracking-tighter text-white">
+                        New
                       </span>
                     </div>
                   )}

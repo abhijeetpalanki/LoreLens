@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
+import { UpdateQuery } from "mongoose";
 
 import {
   FranchiseInput,
@@ -11,8 +12,8 @@ import {
 } from "@/types";
 import { connectToDatabase } from "@/app/lib/db";
 import { Franchise } from "@/app/lib/models/Franchise";
-import { UserProgress } from "@/app/lib/models/UserProgress";
-import { ChatMessage } from "../lib/models/ChatMessage";
+import { IUserProgress, UserProgress } from "@/app/lib/models/UserProgress";
+import { ChatMessage } from "@/app/lib/models/ChatMessage";
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
@@ -122,38 +123,47 @@ export async function getUserLibrary(): Promise<PopulatedLibraryItem[]> {
 
   await connectToDatabase();
 
-  const library = await UserProgress.find({ userId })
+  const library = await UserProgress.find({
+    userId,
+    status: { $nin: ["Completed", "Archived"] },
+  })
     .populate("franchiseId")
     .sort({ updatedAt: -1 })
     .lean();
 
-  return Promise.all(
-    library.map(async (item): Promise<PopulatedLibraryItem> => {
-      const hasHistory = await ChatMessage.exists({
-        userId,
-        franchiseId: item.franchiseId._id,
-      });
+  const franchiseIds = library.map((item) => item.franchiseId._id);
 
-      const isAtStart = item.currentSeason === 1 && item.currentEpisode === 1;
+  const chatHistories = await ChatMessage.distinct("franchiseId", {
+    userId,
+    franchiseId: { $in: franchiseIds },
+  });
 
-      return {
-        _id: item._id.toString(),
-        userId: item.userId,
-        franchiseId: {
-          _id: item.franchiseId._id.toString(),
-          tmdbId: item.franchiseId.tmdbId,
-          title: item.franchiseId.title,
-          type: item.franchiseId.type,
-          description: item.franchiseId.description,
-          coverImage: item.franchiseId.coverImage,
-        },
-        currentSeason: item.currentSeason,
-        currentEpisode: item.currentEpisode,
-        status: item.status,
-        isRewatching: !!hasHistory && isAtStart,
-      };
-    }),
+  const franchisesWithHistory = new Set(
+    chatHistories.map((id) => id.toString()),
   );
+
+  return library.map((item): PopulatedLibraryItem => {
+    const franchiseIdStr = item.franchiseId._id.toString();
+    const hasHistory = franchisesWithHistory.has(franchiseIdStr);
+    const isAtStart = item.currentSeason === 1 && item.currentEpisode === 1;
+
+    return {
+      _id: item._id.toString(),
+      userId: item.userId,
+      franchiseId: {
+        _id: franchiseIdStr,
+        tmdbId: item.franchiseId.tmdbId,
+        title: item.franchiseId.title,
+        type: item.franchiseId.type,
+        description: item.franchiseId.description,
+        coverImage: item.franchiseId.coverImage,
+      },
+      currentSeason: item.currentSeason,
+      currentEpisode: item.currentEpisode,
+      status: item.status,
+      isRewatching: hasHistory && isAtStart,
+    };
+  });
 }
 
 export async function addFranchiseToLibrary(franchiseData: FranchiseInput) {
@@ -186,22 +196,58 @@ export async function addFranchiseToLibrary(franchiseData: FranchiseInput) {
     { upsert: true, new: true },
   );
 
-  await UserProgress.findOneAndUpdate(
-    { userId, franchiseId: franchise._id },
-    {
-      $setOnInsert: {
+  const existingProgress = await UserProgress.findOne({
+    userId,
+    franchiseId: franchise._id,
+  });
+
+  let updatePayload: UpdateQuery<IUserProgress> = {};
+
+  if (!existingProgress) {
+    const hasHistory = await ChatMessage.exists({
+      userId,
+      franchiseId: franchise._id,
+    });
+    updatePayload = {
+      $set: {
         userId,
         franchiseId: franchise._id,
         currentSeason: 1,
         currentEpisode: 1,
-        status: "Watching",
+        status: hasHistory ? "Watching" : "New",
+        isSpoilerMode: false,
       },
-    },
+    };
+  } else {
+    const isActuallyFinished = existingProgress.status === "Completed";
+
+    updatePayload = {
+      $set: {
+        status: isActuallyFinished ? "Re-watching" : "Watching",
+        currentSeason: isActuallyFinished ? 1 : existingProgress.currentSeason,
+        currentEpisode: isActuallyFinished
+          ? 1
+          : existingProgress.currentEpisode,
+        isSpoilerMode: isActuallyFinished
+          ? false
+          : existingProgress.isSpoilerMode,
+      },
+    };
+  }
+
+  await UserProgress.findOneAndUpdate(
+    { userId, franchiseId: franchise._id },
+    updatePayload,
     { upsert: true, new: true },
   );
 
   revalidatePath("/");
   return { success: true, franchiseId: franchise._id.toString() };
+}
+
+export async function archiveFranchise(progressId: string) {
+  await UserProgress.findByIdAndUpdate(progressId, { status: "Archived" });
+  revalidatePath("/");
 }
 
 export async function updateProgress(
@@ -219,26 +265,27 @@ export async function updateProgress(
 
   const seasonMap = progress.franchiseId.seasonMap;
   const newSeason = updates.currentSeason ?? progress.currentSeason;
-
-  if (!seasonMap || !seasonMap.has(newSeason.toString())) {
-    throw new Error(`Season ${newSeason} is not yet available.`);
-  }
-
   const newEpisode = updates.currentEpisode ?? progress.currentEpisode;
 
-  const maxEpisodes = seasonMap.get(newSeason.toString());
+  if (seasonMap && seasonMap.has(newSeason.toString())) {
+    const maxEpisodes = seasonMap.get(newSeason.toString());
 
-  if (newEpisode > maxEpisodes) {
-    if (seasonMap.has((newSeason + 1).toString())) {
-      updates.currentSeason = newSeason + 1;
-      updates.currentEpisode = 1;
-    } else {
-      throw new Error("You've reached the end of the series!");
+    if (newEpisode > maxEpisodes) {
+      // If there's a next season in the map, auto-advance
+      if (seasonMap.has((newSeason + 1).toString())) {
+        updates.currentSeason = newSeason + 1;
+        updates.currentEpisode = 1;
+      }
     }
+  }
+
+  if (!updates.status && progress.status !== "Completed") {
+    updates.status = "Watching";
   }
 
   await UserProgress.findByIdAndUpdate(progressId, { $set: updates });
   revalidatePath(`/franchise/${progress.franchiseId._id}`);
+  revalidatePath("/");
 
   return { success: true };
 }
@@ -249,7 +296,10 @@ export async function markAsCompleted(franchiseId: string) {
 
   await connectToDatabase();
 
-  await UserProgress.findOneAndDelete({ userId, franchiseId });
+  await UserProgress.findOneAndDelete(
+    { userId, franchiseId },
+    { $set: { status: "Completed" } },
+  );
 
   revalidatePath("/");
   return { success: true };

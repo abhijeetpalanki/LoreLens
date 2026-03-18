@@ -6,6 +6,8 @@ import { ChatInterface } from "@/app/components/chat-interface";
 import { ProgressTracker } from "@/app/components/progress-tracker";
 import { PersonaDock } from "@/app/components/persona-dock";
 import { FranchiseClientProps, Persona } from "@/types";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 export function FranchiseClient({
   franchise,
@@ -38,7 +40,23 @@ export function FranchiseClient({
     <div className="flex-1 container mx-auto px-4 py-6 flex flex-col lg:flex-row gap-8">
       {/* LEFT SIDEBAR */}
       <div className="w-full lg:w-80 flex flex-col gap-6 shrink-0">
-        <div className="relative mb-8">
+        <div className="flex items-center gap-4 group">
+          <Link
+            href="/"
+            className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-600 transition-all active:scale-95 shadow-lg"
+          >
+            <ArrowLeft size={20} />
+          </Link>
+          <div className="flex flex-col">
+            <span className="text-[9px] font-black uppercase tracking-[0.4em] text-neutral-600 mb-0.5">
+              Library
+            </span>
+            <h1 className="text-xl font-bold text-white tracking-tight leading-none group-hover:text-indigo-400 transition-colors">
+              {franchise.title}
+            </h1>
+          </div>
+        </div>
+        <div className="relative">
           <div className="aspect-2/3 w-full rounded-2xl overflow-hidden border border-neutral-800 shadow-2xl bg-neutral-900 relative">
             <Image
               src={franchise.coverImage}

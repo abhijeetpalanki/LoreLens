@@ -12,7 +12,11 @@ export function CompleteButton({ franchiseId }: { franchiseId: string }) {
     e.stopPropagation();
 
     startTransition(async () => {
-      await markAsCompleted(franchiseId);
+      try {
+        await markAsCompleted(franchiseId);
+      } catch (error) {
+        console.error("Failed to complete:", error);
+      }
     });
   };
 
@@ -20,7 +24,9 @@ export function CompleteButton({ franchiseId }: { franchiseId: string }) {
     <button
       onClick={handleComplete}
       disabled={isPending}
-      className="absolute top-3 right-3 p-2 bg-black/60 backdrop-blur-md border border-white/10 rounded-full text-white opacity-0 group-hover:opacity-100 transition-all hover:bg-indigo-600 hover:scale-110 z-20"
+      className={`absolute top-3 right-3 p-2 bg-black/60 backdrop-blur-md border border-white/10 rounded-full text-white transition-all z-20 shadow-xl
+        ${isPending ? "opacity-100" : "opacity-0 group-hover:opacity-100 hover:bg-emerald-600 hover:scale-110 hover:border-emerald-400/50"}
+      `}
       title="Mark as Completed"
     >
       {isPending ? (

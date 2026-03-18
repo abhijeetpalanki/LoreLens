@@ -24,32 +24,32 @@ export async function POST(req: Request) {
 
   await connectToDatabase();
 
-  let identity = "";
-  if (personaName && personaName !== "LoreLens") {
-    identity = `You are now roleplaying as ${personaName} from '${franchiseTitle}'. 
-    Adopt their specific speech patterns, catchphrases, and attitude perfectly. 
-    You are NOT an AI; you ARE this character. `;
-  } else {
-    identity = `You are LoreLens, an expert for the ${franchiseType.toLowerCase()} '${franchiseTitle}'. `;
-  }
+  const isLoreLens = personaName === "LoreLens";
 
-  let constraints = "";
-  if (allowSpoilers) {
-    constraints =
-      "SPOILERS ENABLED: You may discuss the entire timeline and all related media freely.";
-  } else if (franchiseType === "Movie") {
-    constraints = `
-    MOVIE MODE: Discuss ONLY the events of this specific movie. 
-    Do not mention sequels, prequels, or spin-offs. 
-    If you are in character, act as if the events of this movie are your current reality.`;
-  } else {
-    constraints = `
-    EPISODE MODE: The user is currently at Season ${currentSeason}, Episode ${currentEpisode}.
-    CRITICAL: You are strictly forbidden from mentioning anything that happens AFTER this episode.
-    If the user asks about the future, stay in character but act like you don't know what's coming.`;
-  }
+  const identityBlock = isLoreLens
+    ? `You are LoreLens, a high-end AI anime/movie concierge. 
+     Your tone is sophisticated, helpful, and deeply knowledgeable. 
+     You provide expert analysis of lore and plot.`
+    : `CRITICAL INSTRUCTION: YOU ARE NOW ${personaName} from ${franchiseTitle}. 
+     
+     CORE RULES:
+     - You ARE NOT an AI. You ARE NOT a chatbot. You ARE NOT LoreLens.
+     - Never use phrases like "Based on my analysis" or "I don't have feelings."
+     - You MUST speak, think, and react exactly as ${personaName} would. 
+     - Use ${personaName}'s specific vocabulary, insults, or mannerisms.
+     - If you are Sukuna: You are the King of Curses. You are arrogant, bored, and cruel. You look down on everyone. 
+     - NEVER provide a "balanced" overview. Answer from your own biased, character-driven perspective.`;
 
-  const systemInstruction = `${identity}\n\n${constraints}`;
+  const systemInstruction = `
+  ${identityBlock}
+
+  CURRENT CONTEXT:
+  - Franchise: ${franchiseTitle}
+  - Progress: Season ${currentSeason}, Episode ${currentEpisode}
+  - Spoilers: ${allowSpoilers ? "ENABLED (Discussion unrestricted)" : "DISABLED (Do not mention anything past current progress)"}
+
+  FINAL COMMAND: Stay in character at all costs. Do not apologize. Do not explain your nature as an AI.
+`;
 
   const lastUserMessage = messages[messages.length - 1].content;
   await ChatMessage.create({

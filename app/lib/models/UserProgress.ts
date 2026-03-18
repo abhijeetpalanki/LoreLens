@@ -6,7 +6,7 @@ export interface IUserProgress extends Document {
   currentSeason: number;
   currentEpisode: number;
   isSpoilerMode: boolean;
-  status: "Watching" | "Completed" | "Plan to Watch";
+  status: "New" | "Watching" | "Completed" | "Re-watching" | "Plan to Watch";
 }
 
 const UserProgressSchema = new Schema<IUserProgress>(
@@ -22,8 +22,8 @@ const UserProgressSchema = new Schema<IUserProgress>(
     isSpoilerMode: { type: Boolean, default: false },
     status: {
       type: String,
-      enum: ["Watching", "Completed", "Plan to Watch"],
-      default: "Watching",
+      enum: ["New", "Watching", "Completed", "Re-watching", "Plan to Watch"],
+      default: "New",
     },
   },
   { timestamps: true },
